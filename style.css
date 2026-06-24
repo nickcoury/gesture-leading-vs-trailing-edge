@@ -201,8 +201,14 @@ html, body {
   transform: translateX(-50%);
   z-index: 40;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+}
+
+#dots-row {
+  display: flex;
+  align-items: center;
 }
 
 /* Dots toggle button */
@@ -215,8 +221,8 @@ html, body {
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 100px;
-  padding: 8px 14px;
-  font-size: 13px;
+  padding: 6px 12px;
+  font-size: 12px;
   font-weight: 600;
   color: white;
   cursor: pointer;
@@ -227,8 +233,8 @@ html, body {
 
 .dots-toggle .dots-dot {
   display: inline-block;
-  width: 12px;
-  height: 12px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   background: #00ff64;
   border: 2px solid rgba(255, 255, 255, 0.9);
@@ -266,7 +272,7 @@ html, body {
   background: transparent;
   border: none;
   color: rgba(255, 255, 255, 0.55);
-  padding: 8px 14px;
+  padding: 8px 12px;
   border-radius: 100px;
   font-size: 13px;
   font-weight: 600;

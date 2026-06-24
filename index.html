@@ -32,7 +32,7 @@
     <div id="viewer-content">
       <div class="placeholder-image"></div>
       <h2>Swipe Down to Peek</h2>
-      <p>Release to snap back &middot; 100ms prep delay on touch</p>
+      <p>Release to snap back &middot; 150ms prep delay on touch</p>
     </div>
   </div>
 
@@ -46,17 +46,20 @@
   <!-- Status indicator -->
   <div id="status">Idle</div>
 
-  <!-- Mode toggle + dots toggle -->
+  <!-- Controls -->
   <div id="controls">
     <div class="segmented">
       <button class="seg-btn active" data-mode="leading">Leading</button>
       <button class="seg-btn" data-mode="balanced">Balanced</button>
       <button class="seg-btn" data-mode="trailing">Trailing</button>
+      <button class="seg-btn" data-mode="catching-up">Catching&nbsp;Up</button>
     </div>
-    <button id="dots-toggle" class="dots-toggle active" title="Toggle anchor dots">
-      <span class="dots-dot"></span>
-      <span class="dots-label">Dots</span>
-    </button>
+    <div id="dots-row">
+      <button id="dots-toggle" class="dots-toggle" title="Toggle anchor dots">
+        <span class="dots-dot"></span>
+        <span class="dots-label">Dots</span>
+      </button>
+    </div>
   </div>
 
   <script src="script.js"></script>

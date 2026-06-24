@@ -9,26 +9,38 @@
   var statusEl   = document.getElementById('status');
   var dotsToggle = document.getElementById('dots-toggle');
 
-  var dotsVisible = true;   // toggle state for anchor dots + legend
+  // Dots off by default — focus on the feel, not the debug visuals
+  document.body.classList.add('dots-hidden');
+  var dotsVisible = false;
 
   // ---- Config ----
-  var PREPARE_DELAY = 100;   // ms — main-thread spinlock duration
+  var PREPARE_DELAY = 150;   // ms — main-thread spinlock duration
   var MIN_SCALE     = 0.9;   // scale at max drag distance
   var MAX_DRAG      = 300;   // px — drag distance at which scale bottoms out
 
+  // Catching-up mode: CSS transition duration for overlay catch-up.
+  // Starts at this value and decays to 0 over CATCHUP_FRAMES touchmove frames,
+  // so the overlay smoothly transitions from "lagging behind" to "1:1 tracking".
+  var CATCHUP_START_MS = 120;
+  var CATCHUP_FRAMES   = 4;
+
   // ---- State ----
-  var mode  = 'leading';     // 'leading' | 'balanced' | 'trailing'
+  var mode  = 'leading';     // 'leading' | 'balanced' | 'trailing' | 'catching-up'
   var phase = 'idle';        // 'idle' | 'preparing' | 'tracking' | 'snapping'
 
-  var startX = 0, startY = 0;   // raw touchstart coords
-  var ancX   = 0, ancY   = 0;   // anchor (offset reference) — changes per mode
-  var curX   = 0, curY   = 0;   // latest finger position
-  var offX   = 0, offY   = 0;   // applied translate
-  var sc     = 1;                // applied scale
+  var startX = 0, startY = 0;
+  var ancX   = 0, ancY   = 0;
+  var curX   = 0, curY   = 0;
+  var offX   = 0, offY   = 0;
+  var sc     = 1;
 
-  var ready    = false;          // true once the spinlock is over
-  var reanchor = false;          // true if anchor needs updating on first touchmove
-  var readyDotShown = false;     // has the ready dot been placed for this gesture?
+  var ready    = false;
+  var reanchor = false;
+  var readyDotShown = false;
+
+  // Catching-up state
+  var catchupFrame   = 0;    // counts touchmove frames since gesture ready
+  var catchupDur     = 0;    // current transition duration (ms), decays to 0
 
   // ---- Spinlock — blocks the main thread to simulate real work ----
   function spinlock(ms) {
@@ -42,10 +54,16 @@
       'translate(' + offX + 'px,' + offY + 'px) scale(' + sc + ')';
   }
 
-  // Dots are children of the viewer (position: absolute), so they use
-  // the viewer's local coordinate system which matches viewport coords
-  // before the transform is applied. Once the transform is applied, the
-  // dots drift along with the overlay — pinned to a visual spot on it.
+  function applyTransformWithTransition(durationMs) {
+    if (durationMs > 0) {
+      viewer.style.transition = 'transform ' + durationMs + 'ms linear';
+    } else {
+      viewer.style.transition = 'none';
+    }
+    viewer.style.transform =
+      'translate(' + offX + 'px,' + offY + 'px) scale(' + sc + ')';
+  }
+
   function showDot(el, x, y) {
     if (!dotsVisible) return;
     el.style.left = x + 'px';
@@ -66,13 +84,15 @@
 
   function snapBack() {
     phase = 'snapping';
-    viewer.classList.add('snapping');
+    viewer.style.transition = 'none';   // clear any catch-up transition
+    viewer.classList.add('snapping');   // snapping class applies its own transition
     offX = 0; offY = 0; sc = 1;
     applyTransform();
     hideDots();
     setStatus('Snapping back', false);
     setTimeout(function () {
       viewer.classList.remove('snapping');
+      viewer.style.transition = 'none';
       phase = 'idle';
       setStatus('Idle', false);
     }, 350);
@@ -80,9 +100,7 @@
 
   // ---- Touch: start ----
   function onTouchStart(e) {
-    // Ignore touches that land on the toggle controls
     if (e.target.closest('#controls')) return;
-    // Don't start a new gesture if one is already in progress
     if (phase === 'preparing' || phase === 'tracking') return;
 
     e.preventDefault();
@@ -98,22 +116,20 @@
     ready    = false;
     reanchor = false;
     readyDotShown = false;
+    catchupFrame  = 0;
+    catchupDur    = 0;
     phase    = 'preparing';
 
     viewer.classList.remove('snapping');
+    viewer.style.transition = 'none';
     dotReady.classList.remove('visible');
     dotAnchor.classList.remove('visible');
 
-    // Show the touch-start dot (orange) at the initial touch position.
     showDot(dotStart, startX, startY);
 
-    // Show "Preparing" and force a reflow so it paints *before* the spinlock
-    setStatus('Preparing (100ms spinlock)\u2026', true);
-    void statusEl.offsetHeight;   // force layout / paint
+    setStatus('Preparing (150ms spinlock)\u2026', true);
+    void statusEl.offsetHeight;
 
-    // ===== 100 ms main-thread spinlock =====
-    // touchmove events queue up in the browser during this time;
-    // they fire in rapid succession once we return.
     spinlock(PREPARE_DELAY);
 
     // Gesture is now ready
@@ -122,13 +138,13 @@
     setStatus('Tracking', true);
 
     if (mode === 'trailing' || mode === 'balanced') {
-      // Both trailing and balanced re-anchor on the first touchmove
-      // after the spinlock — trailing to the finger, balanced to the
-      // midpoint between touchstart and the finger.
       reanchor = true;
     }
+    if (mode === 'catching-up') {
+      // First touchmove will start with the initial catch-up transition
+      catchupDur = CATCHUP_START_MS;
+    }
     // Leading edge: anchor stays at touchstart → the overlay will JUMP
-    // to reflect all movement that accumulated during the spinlock.
   }
 
   // ---- Touch: move ----
@@ -139,42 +155,72 @@
     curX = t.clientX;
     curY = t.clientY;
 
-    if (!ready) return;   // safety — shouldn't happen post-spinlock
+    if (!ready) return;
 
     if (reanchor) {
-      // Show the ready dot (cyan) at the finger's current position.
       showDot(dotReady, curX, curY);
       readyDotShown = true;
 
       if (mode === 'trailing') {
-        // Trailing edge: anchor = current finger position → no jump.
         ancX = curX;
         ancY = curY;
       } else {
-        // Balanced: anchor = midpoint between touchstart and finger
-        // → overlay jumps by half the accumulated distance.
+        // balanced
         ancX = (startX + curX) / 2;
         ancY = (startY + curY) / 2;
-        // Show the green anchor dot at the midpoint.
         showDot(dotAnchor, ancX, ancY);
       }
       reanchor = false;
+    } else if (mode === 'catching-up' && catchupFrame === 0) {
+      // First touchmove in catching-up mode: the overlay is still at
+      // (0,0) from the spinlock. Apply the full target with a transition
+      // so it smoothly catches up. Anchor stays at touchstart (like leading).
+      showDot(dotReady, curX, curY);
+      readyDotShown = true;
+      // Anchor = touchstart, same as leading — the offset is the full delta
+      // but instead of jumping, we transition to it.
     } else if (!readyDotShown) {
-      // Leading edge: the ready dot shows where the finger is now
-      // (first touchmove after spinlock). Anchor stays at touchstart.
+      // Leading edge
       showDot(dotReady, curX, curY);
       readyDotShown = true;
     }
 
-    offX = curX - ancX;
-    offY = curY - ancY;
+    if (mode === 'catching-up') {
+      // Anchor at touchstart (same as leading) so offX/offY = full delta.
+      // But instead of jumping, apply via CSS transition that decays.
+      offX = curX - startX;
+      offY = curY - startY;
 
-    // Shrink proportionally to drag distance (1.0 → 0.9)
-    var dist = Math.sqrt(offX * offX + offY * offY);
-    var p    = Math.min(dist / MAX_DRAG, 1);
-    sc       = 1 - (1 - MIN_SCALE) * p;
+      var dist = Math.sqrt(offX * offX + offY * offY);
+      var p    = Math.min(dist / MAX_DRAG, 1);
+      sc       = 1 - (1 - MIN_SCALE) * p;
 
-    applyTransform();
+      // Apply with current catch-up transition duration
+      applyTransformWithTransition(catchupDur);
+
+      // Decay the transition duration toward 0 over CATCHUP_FRAMES frames.
+      // Frame 0: CATCHUP_START_MS (120ms)
+      // Frame 1: 90ms (75%)
+      // Frame 2: 60ms (50%)
+      // Frame 3: 30ms (25%)
+      // Frame 4+: 0ms (1:1 tracking)
+      catchupFrame++;
+      if (catchupFrame >= CATCHUP_FRAMES) {
+        catchupDur = 0;
+      } else {
+        catchupDur = CATCHUP_START_MS * (1 - catchupFrame / CATCHUP_FRAMES);
+      }
+    } else {
+      // Leading / balanced / trailing — standard 1:1 tracking, no transition
+      offX = curX - ancX;
+      offY = curY - ancY;
+
+      var dist2 = Math.sqrt(offX * offX + offY * offY);
+      var p2    = Math.min(dist2 / MAX_DRAG, 1);
+      sc        = 1 - (1 - MIN_SCALE) * p2;
+
+      applyTransform();
+    }
   }
 
   // ---- Touch: end / cancel ----
@@ -189,9 +235,6 @@
   }
 
   // ---- Mode toggle ----
-  // FIX: Must stop propagation on touchend too, otherwise the
-  // document-level touchend handler calls preventDefault() which
-  // prevents the browser from synthesizing a click event.
   segButtons.forEach(function (btn) {
     function setMode(e) {
       e.stopPropagation();
@@ -202,8 +245,6 @@
       });
     }
 
-    // Use touchend (not click) for immediate response on mobile,
-    // AND stop it from reaching the document handler.
     btn.addEventListener('touchend', setMode, { passive: false });
     btn.addEventListener('touchstart', function (e) {
       e.stopPropagation();
@@ -213,7 +254,6 @@
       e.stopPropagation();
       e.preventDefault();
     }, { passive: false });
-    // Fallback for desktop testing
     btn.addEventListener('click', function (e) {
       e.stopPropagation();
       mode = btn.getAttribute('data-mode');
@@ -224,8 +264,6 @@
   });
 
   // ---- Dots toggle ----
-  // Same touch event handling as mode buttons: stop propagation on all
-  // touch events so the document handler doesn't interfere.
   function toggleDots(e) {
     if (e) { e.stopPropagation(); e.preventDefault(); }
     dotsVisible = !dotsVisible;
