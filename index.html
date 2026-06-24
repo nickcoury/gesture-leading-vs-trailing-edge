@@ -46,13 +46,17 @@
   <!-- Status indicator -->
   <div id="status">Idle</div>
 
-  <!-- Mode toggle -->
+  <!-- Mode toggle + dots toggle -->
   <div id="controls">
     <div class="segmented">
       <button class="seg-btn active" data-mode="leading">Leading</button>
       <button class="seg-btn" data-mode="balanced">Balanced</button>
       <button class="seg-btn" data-mode="trailing">Trailing</button>
     </div>
+    <button id="dots-toggle" class="dots-toggle active" title="Toggle anchor dots">
+      <span class="dots-dot"></span>
+      <span class="dots-label">Dots</span>
+    </button>
   </div>
 
   <script src="script.js"></script>
