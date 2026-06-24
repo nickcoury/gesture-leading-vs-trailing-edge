@@ -27,12 +27,19 @@
     <div id="viewer-content">
       <div class="placeholder-image"></div>
       <h2>Swipe Down to Peek</h2>
-      <p>Release to snap back &middot; 100ms prep delay on touch</p>
+      <p>Release to snap back &middot; 250ms prep delay on touch</p>
     </div>
   </div>
 
-  <!-- Anchor point indicator (shows where the gesture origin is) -->
-  <div id="anchor-dot"></div>
+  <!-- Two anchor-point indicators -->
+  <div id="dot-start" class="anchor-dot"></div>
+  <div id="dot-ready" class="anchor-dot"></div>
+
+  <!-- Legend -->
+  <div id="legend">
+    <div class="legend-item"><span class="legend-dot dot-start-color"></span> Touch start</div>
+    <div class="legend-item"><span class="legend-dot dot-ready-color"></span> Gesture ready</div>
+  </div>
 
   <!-- Status indicator -->
   <div id="status">Idle</div>

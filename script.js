@@ -3,11 +3,12 @@
 
   var viewer     = document.getElementById('viewer');
   var segButtons = document.querySelectorAll('.seg-btn');
-  var anchorDot  = document.getElementById('anchor-dot');
+  var dotStart   = document.getElementById('dot-start');
+  var dotReady   = document.getElementById('dot-ready');
   var statusEl   = document.getElementById('status');
 
   // ---- Config ----
-  var PREPARE_DELAY = 100;   // ms — main-thread spinlock duration
+  var PREPARE_DELAY = 250;   // ms — main-thread spinlock duration
   var MIN_SCALE     = 0.9;   // scale at max drag distance
   var MAX_DRAG      = 300;   // px — drag distance at which scale bottoms out
 
@@ -36,14 +37,15 @@
       'translate(' + offX + 'px,' + offY + 'px) scale(' + sc + ')';
   }
 
-  function showAnchor(x, y) {
-    anchorDot.style.left = x + 'px';
-    anchorDot.style.top  = y + 'px';
-    anchorDot.classList.add('visible');
+  function showDot(el, x, y) {
+    el.style.left = x + 'px';
+    el.style.top  = y + 'px';
+    el.classList.add('visible');
   }
 
-  function hideAnchor() {
-    anchorDot.classList.remove('visible');
+  function hideDots() {
+    dotStart.classList.remove('visible');
+    dotReady.classList.remove('visible');
   }
 
   function setStatus(text, active) {
@@ -56,7 +58,7 @@
     viewer.classList.add('snapping');
     offX = 0; offY = 0; sc = 1;
     applyTransform();
-    hideAnchor();
+    hideDots();
     setStatus('Snapping back', false);
     setTimeout(function () {
       viewer.classList.remove('snapping');
@@ -87,15 +89,16 @@
     phase    = 'preparing';
 
     viewer.classList.remove('snapping');
+    dotReady.classList.remove('visible');
 
-    // Show the anchor dot at the touch-start position
-    showAnchor(startX, startY);
+    // Show the touch-start dot (orange) at the initial touch position
+    showDot(dotStart, startX, startY);
 
     // Show "Preparing" and force a reflow so it paints *before* the spinlock
-    setStatus('Preparing (100ms spinlock)\u2026', true);
+    setStatus('Preparing (250ms spinlock)\u2026', true);
     void statusEl.offsetHeight;   // force layout / paint
 
-    // ===== 100 ms main-thread spinlock =====
+    // ===== 250 ms main-thread spinlock =====
     // touchmove events queue up in the browser during this time;
     // they fire in rapid succession once we return.
     spinlock(PREPARE_DELAY);
@@ -125,11 +128,17 @@
     if (!ready) return;   // safety — shouldn't happen post-spinlock
 
     if (reanchor) {
-      // Trailing edge: discard accumulated movement, start fresh here
+      // Trailing edge: discard accumulated movement, start fresh here.
+      // Show the ready dot (cyan) at the re-anchor position.
       ancX = curX;
       ancY = curY;
-      showAnchor(ancX, ancY);
+      showDot(dotReady, ancX, ancY);
       reanchor = false;
+    } else if (!dotReady.classList.contains('visible')) {
+      // Leading edge: the ready dot shows where the finger is now
+      // (the moment the gesture became ready — first touchmove after spinlock).
+      // The anchor stays at touchstart, but we mark this point visually.
+      showDot(dotReady, curX, curY);
     }
 
     offX = curX - ancX;
@@ -155,7 +164,31 @@
   }
 
   // ---- Mode toggle ----
+  // FIX: Must stop propagation on touchend too, otherwise the
+  // document-level touchend handler calls preventDefault() which
+  // prevents the browser from synthesizing a click event.
   segButtons.forEach(function (btn) {
+    function setMode(e) {
+      e.stopPropagation();
+      e.preventDefault();
+      mode = btn.getAttribute('data-mode');
+      segButtons.forEach(function (b) {
+        b.classList.toggle('active', b === btn);
+      });
+    }
+
+    // Use touchend (not click) for immediate response on mobile,
+    // AND stop it from reaching the document handler.
+    btn.addEventListener('touchend', setMode, { passive: false });
+    btn.addEventListener('touchstart', function (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }, { passive: false });
+    btn.addEventListener('touchmove', function (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }, { passive: false });
+    // Fallback for desktop testing
     btn.addEventListener('click', function (e) {
       e.stopPropagation();
       mode = btn.getAttribute('data-mode');
@@ -163,13 +196,6 @@
         b.classList.toggle('active', b === btn);
       });
     });
-    // Prevent touch on the toggle from starting / interfering with the gesture
-    btn.addEventListener('touchstart', function (e) {
-      e.stopPropagation();
-    }, { passive: true });
-    btn.addEventListener('touchmove', function (e) {
-      e.stopPropagation();
-    }, { passive: true });
   });
 
   // ---- Register touch listeners on document (passive:false for preventDefault) ----
