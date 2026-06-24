@@ -92,9 +92,9 @@ html, body {
   text-align: center;
 }
 
-/* ---------- Anchor dots (large so visible under finger) ---------- */
+/* ---------- Anchor dots (inside viewer, drift with transform) ---------- */
 .anchor-dot {
-  position: fixed;
+  position: absolute;
   width: 64px;
   height: 64px;
   border-radius: 50%;
@@ -128,7 +128,7 @@ html, body {
   bottom: 64px;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 25;
+  z-index: 30;
   display: flex;
   gap: 20px;
   color: white;
@@ -167,7 +167,7 @@ html, body {
   bottom: 24px;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 25;
+  z-index: 30;
   color: white;
   font-size: 13px;
   font-weight: 500;
@@ -192,7 +192,7 @@ html, body {
   top: 14px;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 30;
+  z-index: 40;
 }
 
 .segmented {

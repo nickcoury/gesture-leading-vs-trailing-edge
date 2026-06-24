@@ -8,7 +8,7 @@
   var statusEl   = document.getElementById('status');
 
   // ---- Config ----
-  var PREPARE_DELAY = 250;   // ms — main-thread spinlock duration
+  var PREPARE_DELAY = 150;   // ms — main-thread spinlock duration
   var MIN_SCALE     = 0.9;   // scale at max drag distance
   var MAX_DRAG      = 300;   // px — drag distance at which scale bottoms out
 
@@ -37,6 +37,10 @@
       'translate(' + offX + 'px,' + offY + 'px) scale(' + sc + ')';
   }
 
+  // Dots are children of the viewer (position: absolute), so they use
+  // the viewer's local coordinate system which matches viewport coords
+  // before the transform is applied. Once the transform is applied, the
+  // dots drift along with the overlay — pinned to a visual spot on it.
   function showDot(el, x, y) {
     el.style.left = x + 'px';
     el.style.top  = y + 'px';
@@ -91,14 +95,15 @@
     viewer.classList.remove('snapping');
     dotReady.classList.remove('visible');
 
-    // Show the touch-start dot (orange) at the initial touch position
+    // Show the touch-start dot (orange) at the initial touch position.
+    // Dot is a child of the viewer, so it drifts when the viewer transforms.
     showDot(dotStart, startX, startY);
 
     // Show "Preparing" and force a reflow so it paints *before* the spinlock
-    setStatus('Preparing (250ms spinlock)\u2026', true);
+    setStatus('Preparing (150ms spinlock)\u2026', true);
     void statusEl.offsetHeight;   // force layout / paint
 
-    // ===== 250 ms main-thread spinlock =====
+    // ===== 150 ms main-thread spinlock =====
     // touchmove events queue up in the browser during this time;
     // they fire in rapid succession once we return.
     spinlock(PREPARE_DELAY);

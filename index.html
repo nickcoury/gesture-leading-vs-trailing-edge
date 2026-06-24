@@ -24,16 +24,16 @@
 
   <!-- Full-screen overlay viewer -->
   <div id="viewer">
+    <!-- Anchor dots live INSIDE the viewer so they drift with the transform -->
+    <div id="dot-start" class="anchor-dot"></div>
+    <div id="dot-ready" class="anchor-dot"></div>
+
     <div id="viewer-content">
       <div class="placeholder-image"></div>
       <h2>Swipe Down to Peek</h2>
-      <p>Release to snap back &middot; 250ms prep delay on touch</p>
+      <p>Release to snap back &middot; 150ms prep delay on touch</p>
     </div>
   </div>
-
-  <!-- Two anchor-point indicators -->
-  <div id="dot-start" class="anchor-dot"></div>
-  <div id="dot-ready" class="anchor-dot"></div>
 
   <!-- Legend -->
   <div id="legend">
