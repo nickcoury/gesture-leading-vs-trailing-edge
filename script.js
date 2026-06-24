@@ -19,9 +19,9 @@
   var MAX_DRAG      = 300;   // px — drag distance at which scale bottoms out
 
   // Catching-up mode: time-based transition schedule (refresh-rate independent).
-  // The easing cubic-bezier(0.25, 1, 0.25, 1) has fast initial acceleration
+  // The easing cubic-bezier(0.4, 0.8, 0.6, 1) has fast initial acceleration
   // (closes most of the gap in the first ~30% of the duration) then eases out.
-  var CATCHUP_EASING = 'cubic-bezier(0.25, 1, 0.25, 1)';
+  var CATCHUP_EASING = 'cubic-bezier(0.4, 0.8, 0.6, 1)';
   // Schedule: [elapsed_ms_threshold, transition_duration_ms]
   // 0–100ms  → 100ms transition (smooth catch-up, fast-start easing)
   // 100–150ms → 50ms transition (tighter)
