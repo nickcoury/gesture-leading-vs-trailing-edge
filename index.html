@@ -27,11 +27,12 @@
     <!-- Anchor dots live INSIDE the viewer so they drift with the transform -->
     <div id="dot-start" class="anchor-dot"></div>
     <div id="dot-ready" class="anchor-dot"></div>
+    <div id="dot-anchor" class="anchor-dot"></div>
 
     <div id="viewer-content">
       <div class="placeholder-image"></div>
       <h2>Swipe Down to Peek</h2>
-      <p>Release to snap back &middot; 150ms prep delay on touch</p>
+      <p>Release to snap back &middot; 100ms prep delay on touch</p>
     </div>
   </div>
 
@@ -39,6 +40,7 @@
   <div id="legend">
     <div class="legend-item"><span class="legend-dot dot-start-color"></span> Touch start</div>
     <div class="legend-item"><span class="legend-dot dot-ready-color"></span> Gesture ready</div>
+    <div class="legend-item"><span class="legend-dot dot-anchor-color"></span> Anchor (balanced)</div>
   </div>
 
   <!-- Status indicator -->
@@ -48,6 +50,7 @@
   <div id="controls">
     <div class="segmented">
       <button class="seg-btn active" data-mode="leading">Leading</button>
+      <button class="seg-btn" data-mode="balanced">Balanced</button>
       <button class="seg-btn" data-mode="trailing">Trailing</button>
     </div>
   </div>

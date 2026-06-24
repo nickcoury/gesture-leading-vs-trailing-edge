@@ -5,15 +5,16 @@
   var segButtons = document.querySelectorAll('.seg-btn');
   var dotStart   = document.getElementById('dot-start');
   var dotReady   = document.getElementById('dot-ready');
+  var dotAnchor  = document.getElementById('dot-anchor');
   var statusEl   = document.getElementById('status');
 
   // ---- Config ----
-  var PREPARE_DELAY = 150;   // ms — main-thread spinlock duration
+  var PREPARE_DELAY = 100;   // ms — main-thread spinlock duration
   var MIN_SCALE     = 0.9;   // scale at max drag distance
   var MAX_DRAG      = 300;   // px — drag distance at which scale bottoms out
 
   // ---- State ----
-  var mode  = 'leading';     // 'leading' | 'trailing'
+  var mode  = 'leading';     // 'leading' | 'balanced' | 'trailing'
   var phase = 'idle';        // 'idle' | 'preparing' | 'tracking' | 'snapping'
 
   var startX = 0, startY = 0;   // raw touchstart coords
@@ -23,7 +24,7 @@
   var sc     = 1;                // applied scale
 
   var ready    = false;          // true once the spinlock is over
-  var reanchor = false;          // trailing edge: re-anchor on next touchmove
+  var reanchor = false;          // true if anchor needs updating on first touchmove
 
   // ---- Spinlock — blocks the main thread to simulate real work ----
   function spinlock(ms) {
@@ -50,6 +51,7 @@
   function hideDots() {
     dotStart.classList.remove('visible');
     dotReady.classList.remove('visible');
+    dotAnchor.classList.remove('visible');
   }
 
   function setStatus(text, active) {
@@ -94,16 +96,16 @@
 
     viewer.classList.remove('snapping');
     dotReady.classList.remove('visible');
+    dotAnchor.classList.remove('visible');
 
     // Show the touch-start dot (orange) at the initial touch position.
-    // Dot is a child of the viewer, so it drifts when the viewer transforms.
     showDot(dotStart, startX, startY);
 
     // Show "Preparing" and force a reflow so it paints *before* the spinlock
-    setStatus('Preparing (150ms spinlock)\u2026', true);
+    setStatus('Preparing (100ms spinlock)\u2026', true);
     void statusEl.offsetHeight;   // force layout / paint
 
-    // ===== 150 ms main-thread spinlock =====
+    // ===== 100 ms main-thread spinlock =====
     // touchmove events queue up in the browser during this time;
     // they fire in rapid succession once we return.
     spinlock(PREPARE_DELAY);
@@ -113,9 +115,10 @@
     phase  = 'tracking';
     setStatus('Tracking', true);
 
-    if (mode === 'trailing') {
-      // Trailing edge: re-anchor to the most recent touchmove position
-      // on the first touchmove that fires after the spinlock.
+    if (mode === 'trailing' || mode === 'balanced') {
+      // Both trailing and balanced re-anchor on the first touchmove
+      // after the spinlock — trailing to the finger, balanced to the
+      // midpoint between touchstart and the finger.
       reanchor = true;
     }
     // Leading edge: anchor stays at touchstart → the overlay will JUMP
@@ -133,16 +136,25 @@
     if (!ready) return;   // safety — shouldn't happen post-spinlock
 
     if (reanchor) {
-      // Trailing edge: discard accumulated movement, start fresh here.
-      // Show the ready dot (cyan) at the re-anchor position.
-      ancX = curX;
-      ancY = curY;
-      showDot(dotReady, ancX, ancY);
+      // Show the ready dot (cyan) at the finger's current position.
+      showDot(dotReady, curX, curY);
+
+      if (mode === 'trailing') {
+        // Trailing edge: anchor = current finger position → no jump.
+        ancX = curX;
+        ancY = curY;
+      } else {
+        // Balanced: anchor = midpoint between touchstart and finger
+        // → overlay jumps by half the accumulated distance.
+        ancX = (startX + curX) / 2;
+        ancY = (startY + curY) / 2;
+        // Show the green anchor dot at the midpoint.
+        showDot(dotAnchor, ancX, ancY);
+      }
       reanchor = false;
     } else if (!dotReady.classList.contains('visible')) {
       // Leading edge: the ready dot shows where the finger is now
-      // (the moment the gesture became ready — first touchmove after spinlock).
-      // The anchor stays at touchstart, but we mark this point visually.
+      // (first touchmove after spinlock). Anchor stays at touchstart.
       showDot(dotReady, curX, curY);
     }
 

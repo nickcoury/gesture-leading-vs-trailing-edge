@@ -122,6 +122,12 @@ html, body {
   box-shadow: 0 0 24px rgba(0, 200, 255, 0.6);
 }
 
+/* Balanced anchor — green */
+#dot-anchor {
+  background: rgba(0, 255, 100, 0.65);
+  box-shadow: 0 0 24px rgba(0, 255, 100, 0.6);
+}
+
 /* ---------- Legend ---------- */
 #legend {
   position: fixed;
@@ -130,7 +136,7 @@ html, body {
   transform: translateX(-50%);
   z-index: 30;
   display: flex;
-  gap: 20px;
+  gap: 12px;
   color: white;
   font-size: 11px;
   font-weight: 500;
@@ -158,8 +164,9 @@ html, body {
   border: 2px solid rgba(255, 255, 255, 0.9);
 }
 
-.dot-start-color { background: rgba(255, 140, 0, 0.8); }
-.dot-ready-color { background: rgba(0, 200, 255, 0.8); }
+.dot-start-color  { background: rgba(255, 140, 0, 0.8); }
+.dot-ready-color  { background: rgba(0, 200, 255, 0.8); }
+.dot-anchor-color { background: rgba(0, 255, 100, 0.8); }
 
 /* ---------- Status ---------- */
 #status {
@@ -209,7 +216,7 @@ html, body {
   background: transparent;
   border: none;
   color: rgba(255, 255, 255, 0.55);
-  padding: 8px 18px;
+  padding: 8px 14px;
   border-radius: 100px;
   font-size: 13px;
   font-weight: 600;
