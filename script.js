@@ -51,6 +51,7 @@
   // Catching-up state
   var catchupStartTime = 0;  // performance.now() when gesture became ready
   var catchupDur       = 0;  // current transition duration (ms)
+  var catchupFirstFrame = false;  // true on first touchmove — forces reflow
 
   // ---- Spinlock — blocks the main thread to simulate real work ----
   function spinlock(ms) {
@@ -64,15 +65,27 @@
       'translate(' + offX + 'px,' + offY + 'px) scale(' + sc + ')';
   }
 
+  // On the first catch-up frame, the overlay is at (0,0) from the spinlock.
+  // We need to:
+  //   1. Set the transition property
+  //   2. Force a reflow so the browser commits the current (0,0) transform
+  //      as the "from" state of the transition
+  //   3. Then set the new target transform
+  // Without step 2, the browser batches the transition + transform change
+  // into one atomic style update and the transition is silently skipped —
+  // the overlay just jumps (looks identical to leading edge).
   function applyTransformWithTransition(durationMs) {
     if (durationMs > 0) {
       viewer.style.transition = 'transform ' + durationMs + 'ms ' + CATCHUP_EASING;
+      if (catchupFirstFrame) {
+        // Force the browser to commit the current transform as the
+        // starting point before we change the target.
+        void viewer.offsetWidth;  // forces layout/reflow
+        catchupFirstFrame = false;
+      }
     } else {
       viewer.style.transition = 'none';
     }
-    // Force the transition to start from the current rendered position
-    // before applying the new target. Without this, the browser may
-    // batch the style change and skip the transition.
     viewer.style.transform =
       'translate(' + offX + 'px,' + offY + 'px) scale(' + sc + ')';
   }
@@ -142,6 +155,7 @@
     readyDotShown = false;
     catchupStartTime = 0;
     catchupDur       = 0;
+    catchupFirstFrame = false;
     phase    = 'preparing';
 
     viewer.classList.remove('snapping');
@@ -167,6 +181,7 @@
     if (mode === 'catching-up') {
       catchupStartTime = performance.now();
       catchupDur = CATCHUP_SCHEDULE[0][1];  // start at 100ms
+      catchupFirstFrame = true;  // first touchmove must force reflow
     }
     // Leading edge: anchor stays at touchstart → the overlay will JUMP
   }
