@@ -23,16 +23,16 @@
   // (closes most of the gap in the first ~30% of the duration) then eases out.
   var CATCHUP_EASING = 'cubic-bezier(0.4, 0.8, 0.6, 1)';
   // Schedule: [elapsed_ms_threshold, transition_duration_ms]
-  // 0–100ms  → 100ms transition (smooth catch-up, fast-start easing)
-  // 100–150ms → 50ms transition (tighter)
-  // 150–200ms → 25ms transition (nearly 1:1)
-  // 200ms+    → 0ms (direct tracking, transition removed)
+  // 0–200ms  → 200ms transition (smooth catch-up, fast-start easing)
+  // 200–300ms → 100ms transition (tighter)
+  // 300–400ms → 50ms transition (nearly 1:1)
+  // 400ms+    → 0ms (direct tracking, transition removed)
   var CATCHUP_SCHEDULE = [
-    [0,   100],
-    [100,  50],
-    [150,  25],
+    [0,   200],
+    [200, 100],
+    [300,  50],
   ];
-  var CATCHUP_END_MS = 200;  // after this, transition removed entirely
+  var CATCHUP_END_MS = 400;  // after this, transition removed entirely
 
   // ---- State ----
   var mode  = 'leading';     // 'leading' | 'balanced' | 'trailing' | 'catching-up'
@@ -180,7 +180,7 @@
     }
     if (mode === 'catching-up') {
       catchupStartTime = performance.now();
-      catchupDur = CATCHUP_SCHEDULE[0][1];  // start at 100ms
+      catchupDur = CATCHUP_SCHEDULE[0][1];  // start at 200ms
       catchupFirstFrame = true;  // first touchmove must force reflow
     }
     // Leading edge: anchor stays at touchstart → the overlay will JUMP
