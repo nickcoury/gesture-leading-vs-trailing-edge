@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Leading vs Trailing Edge Gesture</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Base page (visible behind the shrunk overlay) -->
+  <div id="base-page">
+    <div class="card" style="background:linear-gradient(135deg,#667eea,#764ba2)">1</div>
+    <div class="card" style="background:linear-gradient(135deg,#f093fb,#f5576c)">2</div>
+    <div class="card" style="background:linear-gradient(135deg,#4facfe,#00f2fe)">3</div>
+    <div class="card" style="background:linear-gradient(135deg,#43e97b,#38f9d7)">4</div>
+    <div class="card" style="background:linear-gradient(135deg,#fa709a,#fee140)">5</div>
+    <div class="card" style="background:linear-gradient(135deg,#30cfd0,#330867)">6</div>
+    <div class="card" style="background:linear-gradient(135deg,#a8edea,#fed6e3)">7</div>
+    <div class="card" style="background:linear-gradient(135deg,#5ee7df,#b490ca)">8</div>
+  </div>
+
+  <!-- Full-screen overlay viewer -->
+  <div id="viewer">
+    <div id="viewer-content">
+      <div class="placeholder-image"></div>
+      <h2>Swipe Down to Peek</h2>
+      <p>Release to snap back &middot; 100ms prep delay on touch</p>
+    </div>
+  </div>
+
+  <!-- Anchor point indicator (shows where the gesture origin is) -->
+  <div id="anchor-dot"></div>
+
+  <!-- Status indicator -->
+  <div id="status">Idle</div>
+
+  <!-- Mode toggle -->
+  <div id="controls">
+    <div class="segmented">
+      <button class="seg-btn active" data-mode="leading">Leading</button>
+      <button class="seg-btn" data-mode="trailing">Trailing</button>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
